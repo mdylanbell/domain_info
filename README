@@ -1,0 +1,70 @@
+domain_info.pl is a standalone perl script that shouldn't require
+any additional CPAN modules.
+
+It takes as input a domain name (i.e. example.com) and returns a nicely
+formatted report of public infromation about the domain: condensed/important
+WHOIS information, along with DNS information (specifically, the 'A' records 
+for the domain, the www subdomain, and whatever subdomain you optionally
+specify).
+
+Examples:
+domain_info.pl example.com
+domain_info.pl store.example.com
+
+Both of these examples will show the condensed whois information for
+'example.com', along with the following DNS records:
+
+A record for example.com
+A record for www.example.com
+MX records for example.com
+
+The store.example.com version will also show the 'A' record for
+'store.example.com'.
+
+It also performs a reverse-WHOIS on the returned IP addresses, which will
+show you the listed owner of the IP address(es).
+
+The WHOIS fields which are displayed:
+* current registrar
+* expiration date
+* any 'status' fields
+* any nameserver records
+
+If the WHOIS information is returned in a way that confuses the script,
+the full output of a 'whois' command is displayed instead of the condensed
+version.
+
+Full output looks like this:
+
+$ ./domain_info.pl github.com
+
+github.com
+
+*** Condensed WHOIS information ***
+Registrar: GODADDY.COM, INC.
+Expires: 09-oct-2018
+Status: clientDeleteProhibited
+Status: clientRenewProhibited
+Status: clientTransferProhibited
+Status: clientUpdateProhibited
+Name servers:
+	NS1.ANCHOR.NET.AU
+	NS1.EVERYDNS.NET
+	NS2.ANCHOR.NET.AU
+	NS2.EVERYDNS.NET
+	NS3.EVERYDNS.NET
+	NS4.EVERYDNS.NET
+
+
+*** DNS information ***
+Web:
+      github.com: 207.97.227.239 (Rackspace Hosting)
+  www.github.com: 207.97.227.243 (Rackspace Hosting)
+
+Email:
+  MX: ASPMX2.GOOGLEMAIL.com = 74.125.43.27 (Google Inc.)
+  MX: ASPMX3.GOOGLEMAIL.com = 72.14.213.27 (Google Inc.)
+  MX: ALT1.ASPMX.L.GOOGLE.com = 74.125.47.27 (Google Inc.)
+  MX: ALT2.ASPMX.L.GOOGLE.com = 74.125.157.27 (Google Inc.)
+  MX: ASPMX.L.GOOGLE.com = 72.14.213.27 (Google Inc.)
+
