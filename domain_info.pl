@@ -88,43 +88,6 @@ if ( $domain =~ /\.co\.uk$/ ) {
     }
 }
 
-# TODO: .co.uk -- dirty $#!^!$
-# whois adamdawedesign.co.uk 
-# 
-#     Domain name:
-#         adamdawedesign.co.uk
-# 
-#     Registrant:
-#         ADAM DAWE DESIGN
-# 
-#     Registrant type:
-#         UK Sole Trader
-# 
-#     Registrant's address:
-#         47 Barlby Road
-#         London
-#         W10 6AW
-#         United Kingdom
-# 
-#     Registrar:
-#         1 & 1 Internet AG [Tag = SCHLUND]
-#         URL: http://www.1and1.co.uk or http://registrar.1und1.info
-# 
-#     Relevant dates:
-#         Registered on: 01-Mar-2005
-#         Renewal date:  01-Mar-2011
-#         Last updated:  25-Apr-2010
-# 
-#     Registration status:
-#         Registered until renewal date.
-# 
-#     Name servers:
-#         ns33.1and1.co.uk
-#         ns34.1and1.co.uk
-# 
-#     WHOIS lookup made at 06:25:37 24-Nov-2010
-
-
 if ( $no_match ) {
     print "\n$domain doesn't appear to be registered.\n\n";
     exit(1);

@@ -68,3 +68,8 @@ Email:
   MX: ALT2.ASPMX.L.GOOGLE.com = 74.125.157.27 (Google Inc.)
   MX: ASPMX.L.GOOGLE.com = 72.14.213.27 (Google Inc.)
 
+
+
+=== Notes ===
+The WHOIS scraping seems to work very well via Mac's terminal, but not on Linux.  I'll try to find a more standardized way to scrape WHOIS for this information.
+
