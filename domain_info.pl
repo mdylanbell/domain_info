@@ -191,8 +191,10 @@ sub check_dns
     
     # Check MX
     my $res  = Net::DNS::Resolver->new;
-    # Force IPv4
-    $res->force_v4(1);
+    # Force IPv4 (eval'd due to module versions not containing force_v4)
+    eval { 
+        $res->force_v4(1);
+    }
     my @mx   = mx($res, get_raw_domain($domain));
 
     if ( @mx ) {
