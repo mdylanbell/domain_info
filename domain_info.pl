@@ -194,7 +194,8 @@ sub check_dns
     # Force IPv4 (eval'd due to module versions not containing force_v4)
     eval { 
         $res->force_v4(1);
-    }
+    };
+
     my @mx   = mx($res, get_raw_domain($domain));
 
     if ( @mx ) {
