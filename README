@@ -48,28 +48,20 @@ Status: clientRenewProhibited
 Status: clientTransferProhibited
 Status: clientUpdateProhibited
 Name servers:
-	NS1.ANCHOR.NET.AU
-	NS1.EVERYDNS.NET
-	NS2.ANCHOR.NET.AU
-	NS2.EVERYDNS.NET
-	NS3.EVERYDNS.NET
-	NS4.EVERYDNS.NET
+    NS1.P16.DYNECT.NET
+    NS2.P16.DYNECT.NET
+    NS3.P16.DYNECT.NET
+    NS4.P16.DYNECT.NET
 
 
 *** DNS information ***
 Web:
-      github.com: 207.97.227.239 (Rackspace Hosting)
-  www.github.com: 207.97.227.243 (Rackspace Hosting)
+      github.com: [A] 207.97.227.239 (Rackspace Hosting)
+  www.github.com: [A] 207.97.227.243 (Rackspace Hosting)
 
-Email:
-  MX: ASPMX2.GOOGLEMAIL.com = 74.125.43.27 (Google Inc.)
-  MX: ASPMX3.GOOGLEMAIL.com = 72.14.213.27 (Google Inc.)
-  MX: ALT1.ASPMX.L.GOOGLE.com = 74.125.47.27 (Google Inc.)
-  MX: ALT2.ASPMX.L.GOOGLE.com = 74.125.157.27 (Google Inc.)
-  MX: ASPMX.L.GOOGLE.com = 72.14.213.27 (Google Inc.)
-
-
-
-=== Notes ===
-The WHOIS scraping seems to work very well via Mac's terminal, but not on Linux.  I'll try to find a more standardized way to scrape WHOIS for this information.
-
+Email: 
+  10:   ALT2.ASPMX.L.GOOGLE.com: [A] 74.125.93.26 (Google Inc.)
+  10:        ASPMX.L.GOOGLE.com: [A] 74.125.127.26 (Google Inc.)
+  10:     ASPMX2.GOOGLEMAIL.com: [A] 74.125.43.27 (Google Inc.)
+  10:     ASPMX3.GOOGLEMAIL.com: [A] 74.125.127.27 (Google Inc.)
+  10:   ALT1.ASPMX.L.GOOGLE.com: [A] 74.125.159.27 (Google Inc.)

@@ -11,223 +11,215 @@ use constant WHOIS_CACHE_FILE => "~/.whois_org_cache";
 # Control newline (\n) output
 $\ = '';
 
-my $no_cache = 0;
-my $debug = 0;
-
-GetOptions(
-    "d|debug"       => \$debug, 
-    "n|no-cache"    => \$no_cache,
-);
-
-my $domain = $ARGV[0];
-my $raw_domain = get_raw_domain($domain);
-
-if ( !$domain ) {
-    print "Usage: domain_info.pl <domain>\n" .
-          "optional flags: -n for no organization caching, -d for debug\n\n";
-    exit(0);
-}
-
-# Global for caching orgname's for IP
+# Globals
 my $whois_cache = {};
-if ( !$no_cache ) {
-    initialize_whois_cache();
+
+# Default settings, toggled with command line flags
+my $options = {
+    'no_cache' => 0,
+    'debug'    => 0,
+};
+
+exit main();
+
+sub main
+{
+    GetOptions(
+        "d|debug"       => \$main::options->{'debug'}, 
+        "n|no-cache"    => \$main::options->{'no_cache'},
+    );
+
+    # Parse request.  Determine if it is a subdomain or not
+    my $request = $ARGV[0];
+
+    if ( !$request ) {
+        print "Usage: domain_info.pl <domain>\n" .
+              "optional flags: -n for no organization caching, -d for debug\n\n";
+        return(0);
+    }
+
+    my $root_domain = get_root_domain($request);
+
+    # If domain isn't the raw domain or www, treat it as custom subdomain
+    my $custom_subdomain;
+
+    if ( $request !~ /^(?:$root_domain)|(?:www\.$root_domain)$/ ) {
+        $custom_subdomain = $request;
+    }
+
+    if ( !$main::options{'no_cache'} ) {
+        initialize_whois_cache();
+    }
+
+    my $request_info = {
+        'domain'           => $root_domain,
+        'custom_subdomain' => $custom_subdomain,
+        'dns'              => {},
+    };
+
+    display_whois_data($root_domain);
+    display_dns($request_info);
+    display_mx($root_domain);
+
+    if ( !$main::options{'no_cache'} ) {
+        save_whois_cache();
+    }
+
+    return(1)
 }
 
-my ($registrar, @nameservers, @status, $expiration);
 
-my @whois;
-my $whois_long;
-my $no_match = 0;
+sub display_whois_data
+{
+    my $domain = shift;
 
-# Capture useful info from whois
-if ( $domain =~ /\.co\.uk$/ ) { 
-    $/ = '';
-    my $whois_long = `whois $raw_domain`;
-    my $nameservers;
-
-    if ( $whois_long =~ /^\s*This domain name has not been registered./m ) {
-        $no_match = 1;
-    } else {
-        if ( $whois_long =~ /Registrar:\s*(.*)$/m ) {
-            $registrar = $1;
-        }
-        
-        if ( $whois_long =~ /Name servers:\s*(.*)\s+(?:WHOIS)/ ) {
-            $nameservers = $1;
-        }
-   
-        print "DBG: registrar = '$registrar'\n";
-        print "DBG: nameserver = '$nameservers'\n";
+    if ( !$domain ) {
+        die ("Internal error: display_whois_data");
     }
-} else {
-    @whois = `whois $raw_domain`;
 
-    foreach my $line (@whois) {
-        if ( $line =~ /^\s*No match.*$domain/i ) {
-            print ($line . "\n");
+    my ($registrar, @nameservers, @status, $expiration);
+
+    my @whois;
+    my $whois_long;
+    my $no_match = 0;
+
+    # Capture useful info from whois
+    if ( $domain =~ /\.co\.uk$/ ) { 
+        $/ = '';
+        my $whois_long = `whois $domain`;
+        my $nameservers;
+
+        if ( $whois_long =~ /^\s*This domain name has not been registered./m ) {
             $no_match = 1;
-            last;
+        } else {
+            if ( $whois_long =~ /Registrar:\s*(.*)$/m ) {
+                $registrar = $1;
+            }
+
+            if ( $whois_long =~ /Name servers:\s*(.*)\s+(?:WHOIS)/ ) {
+                $nameservers = $1;
+            }
+ 
+            print "DBG: registrar = '$registrar'\n";
+            print "DBG: nameserver = '$nameservers'\n";
         }
-        
-        if ( $line =~ /Registrar(?: Name)?:\s*(.*)$/i ) {
-            $registrar = $1;
-        }
-    
-        if ( $line =~ /Name\s*Servers?:\s*(.*)$/i ) {
-            push(@nameservers, $1) unless ( $1 =~ /^\s*$/ );
-        }
-    
-        if ( $line =~ /Status:\s*(.*)$/i ) {
-            push (@status, $1) unless ( $1 =~ /^\s*$/ );
-        }
-        
-        if ( $line =~ /Expiration Date:\s*(.*)$/i ) {
-            $expiration = $1;
-        }
-    }
-}
-
-if ( $no_match ) {
-    print "\n$domain doesn't appear to be registered.\n\n";
-    exit(1);
-}
-
-if (!$registrar && !$expiration) {
-    print "\n$domain: Couldn't parse WHOIS information, or domain may not be registered.\n";
-    print "Displaying full WHOIS:\n\n";
-    print @whois;
-} else {
-    print "\n$domain\n\n";
-    
-    print "*** Condensed WHOIS information ***\n";
-    print "Registrar: $registrar\n";
-    print "Expires: $expiration\n" unless ( !$expiration );
-    
-    foreach (@status) {
-        print "Status: $_\n";
-    }
-    
-    print "Name servers:\n";
-    foreach (@nameservers) {
-        print "\t$_\n";
-    }
-}
-
-# Grab DNS information for domain, www., and email
-
-# If domain isn't the raw domain or www, treat it as custom sub domain
-my $custom_sub;
-
-if ( $domain !~ /^(?:$raw_domain)|(?:www\.$raw_domain)$/ ) {
-    $custom_sub = $domain;
-}
-
-my $dns = check_dns($raw_domain, $custom_sub);
-
-my $length = 0;
-
-if ($custom_sub) {
-    my @tmp = ( 'www.' . $raw_domain, $custom_sub );
-    @tmp = sort {length $a <=> length $b} @tmp;
-    
-    $length = length( $tmp[1] );
-} else {
-    $length = length('www.' . $raw_domain);
-}
-
-my @types = ('domain', 'www', 'custom');
-my @domains = ($raw_domain, 'www.' . $raw_domain);
-push(@domains, $custom_sub) if ( $custom_sub );
-
-print "\n\n*** DNS information ***\n";
-print "Web:\n";
-
-for ( my $i = 0; $i < $#domains + 1; $i++ ) {
-    my $type = $types[$i];
-
-    if ( defined($dns->{$type}->{'ip'}) && !defined($dns->{$type}->{'error'}) ) {
-        printf "%*s: %s (%s)\n", $length + 2, $domains[$i], $dns->{$type}->{'ip'}, $dns->{$type}->{'org'};
     } else {
-        printf "%*s: No DNS data found\n", $length + 2, $domains[$i];
-    }
-}
+        @whois = `whois $domain`;
 
-print "\nEmail:\n";
-
-while (my ($mx, $ref) = each( %{$dns->{'email'}} ) ) {
-    if ( $mx =~ /^error$/ ) {
-        print "  Error fetching MX records!\n";
-    } else {
-        print "  MX: $mx = " . $ref->{'ip'} . " (" . $ref->{'org'} . ")\n";
-    }
-}
-
-print "\n";
-
-if (!$no_cache) {
-    save_whois_cache();
-}
-
-exit(1);
-
-
-sub check_dns
-{
-    my ($domain, $custom_sub) = @_;
-
-    my $results = {};
-
-    # Check raw domain
-    $results->{'domain'} = get_dns_info($domain);
-
-    # Check www version
-    $results->{'www'} = get_dns_info("www.$domain");
+        foreach my $line (@whois) {
+            if ( $line =~ /^\s*No match.*$domain/i ) {
+                print ($line . "\n");
+                $no_match = 1;
+                last;
+            }
+        
+            if ( $line =~ /Registrar(?: Name)?:\s*(.*)$/i ) {
+                $registrar = $1;
+            }
     
-    # Check if someone specified a subdomain
-    if ( $custom_sub ) {
-        $results->{'custom'} = get_dns_info($custom_sub);
-    }
+            if ( $line =~ /Name\s*Servers?:\s*(.*)$/i ) {
+                push(@nameservers, $1) unless ( $1 =~ /^\s*$/ );
+            }
     
-    # Check MX
-    my $res  = Net::DNS::Resolver->new;
-    # Force IPv4
-    $res->force_v4(1);
-    my @mx   = mx($res, get_raw_domain($domain));
-
-    if ( @mx ) {
-        foreach my $rr ( @mx ) {
-            my $mx_record = $rr->exchange;
-            $results->{'email'}->{$mx_record} = get_dns_info($mx_record);
+            if ( $line =~ /Status:\s*(.*)$/i ) {
+                push (@status, $1) unless ( $1 =~ /^\s*$/ );
+            }
+        
+            if ( $line =~ /Expiration Date:\s*(.*)$/i ) {
+                $expiration = $1;
+            }
         }
     }
-    else {
-        $results->{'email'}->{'error'} = $res->errorstring;
+
+    if ( $no_match ) {
+        print "\n$domain doesn't appear to be registered.\n\n";
+        exit(1);
     }
 
-    return $results;
+    if (!$registrar && !$expiration) {
+        print "\n$domain: Couldn't parse WHOIS information, or domain may not be registered.\n";
+        print "Displaying full WHOIS:\n\n";
+        print @whois;
+    } else {
+        print "\n$domain\n\n";
+
+        print "*** Condensed WHOIS information ***\n";
+        print "Registrar: $registrar\n";
+        print "Expires: $expiration\n" unless ( !$expiration );
+
+        foreach (@status) {
+            print "Status: $_\n";
+        }
+
+        print "Name servers:\n";
+        foreach (@nameservers) {
+            print "\t$_\n";
+        }
+    }
 }
 
 
-sub get_dns_info
+sub display_dns
 {
-    my $host = shift;
+    my $request_info = shift;
 
-    my $ref = {};
-    my ($ip, $tmp) = '';
-    
-    $ref->{'hostname'} = $host;
+    if (!$request_info) {
+        die("Internal error: display_dns");
+    }
 
-    if ( defined($tmp = inet_aton($host)) ) {
-        $ip = inet_ntoa($tmp);
-        $ref->{'ip'} = $ip;
-        $ref->{'org'} = get_orgname($ip);
+    my $domain = $request_info->{'domain'};
+    my $custom_subdomain = $request_info->{'custom_subdomain'};
+
+    # Determine length of the longest part, to make the domain displays line up
+    my $length = 0;
+
+    if ($custom_subdomain) {
+        my @tmp = ( 'www.' . $domain, $custom_subdomain );
+        @tmp = sort {length $a <=> length $b} @tmp;
+
+        $length = length( $tmp[1] );
+    } else {
+        $length = length('www.' . $domain);
     }
-    else {
-        $ref->{'error'} = "true";
+
+    my @domains = ($domain, 'www.' . $domain);
+    push(@domains, $custom_subdomain) if ( $custom_subdomain );
+
+    print "\n\n*** DNS information ***\n";
+    print "Web:\n";
+
+    for ( my $i = 0; $i < $#domains + 1; $i++ ) {
+        printf( "%*s: ", $length + 2, $domains[$i] );
+        display_record( $domains[$i] );
     }
-    
-    return $ref;
+}
+
+
+sub display_mx
+{
+    my $domain = shift;
+    if ( !$domain ) {
+        die( "Internal error: display_mx" );
+    }
+
+    print( "\nEmail: \n" );
+
+    my $res = Net::DNS::Resolver->new;
+
+    my $length = 0;
+
+    my @mx_results = mx($res, $domain);
+    if ( @mx_results ) {
+        foreach my $mx ( @mx_results ) {
+            my $this_length = length( $mx->exchange );
+            $length = $this_length if ( $this_length > $length );
+        }
+
+        foreach my $mx (@mx_results ) {
+            printf( "  %2s: %*s: ", $mx->preference, $length + 2, $mx->exchange );
+            display_record( $mx->exchange );
+        }
+    }
 }
 
 
@@ -238,8 +230,8 @@ sub get_orgname
     return 0 if ( !defined($ip) || $ip !~ /(?:\d{1,3}\.){3}\d{1,3}/ );
 
     # Simple cache per script run, often have many of same IP
-    if ( defined($whois_cache->{$ip}) ) {
-        return $whois_cache->{$ip}->{'org'};
+    if ( defined($main::whois_cache->{$ip}) ) {
+        return $main::whois_cache->{$ip}->{'org'};
     }
 
     my @results = split(/\n/, `whois $ip`);
@@ -275,16 +267,17 @@ sub get_orgname
         $org = "No organization listed."
     }
 
-    $whois_cache->{$ip}->{'org'} = $org;
+    $main::whois_cache->{$ip}->{'org'} = $org;
     
     return $org;
 }
 
 
 # Thanks, Frank Escobedo!
-sub get_raw_domain
+sub get_root_domain
 {
     my $domain = shift;
+
     my @dp = split( /\./, $domain );
     my $num_dp = @dp;
 
@@ -339,3 +332,62 @@ sub save_whois_cache
     
     close (CACHE);
 }
+
+
+sub display_record
+{
+    my $host = shift;
+
+    my $res   = Net::DNS::Resolver->new;
+    my $query = $res->send( $host );
+
+    if ($query) {
+        my @answers = $query->answer;
+        if (!@answers) {
+            print( "No DNS data found.\n" );
+            return;
+        }
+
+        foreach my $rr (@answers) {
+            next unless ( $rr->name eq $host );
+            print_node( $rr, \@answers, length( $host ) );
+        }
+    } else {
+        warn "query failed: ", $res->errorstring, "\n";
+    }
+}
+
+
+# Recursive function, follow CNAMEs until we get to an 'A' record
+sub print_node
+{
+    my ( $node, $answers, $host_length ) = @_;
+    my $depth = 0;
+
+    if ( scalar @_ == 4 ) {
+        $depth = $_[3];
+    }
+
+    my $indent = 0;
+    my $decorator = '';
+
+    if ( $depth ) {
+        $indent = $host_length + 2;
+        $decorator = "`-> ";
+        if ( $node->type eq "A" ) {
+            $decorator = '   ' . $decorator;
+        }
+    }
+
+    if ( $node->type eq "CNAME" ) {
+        printf "%*s%s[CNAME] %s\n", $indent + ($depth * 3), '', $decorator, $node->cname;
+        foreach my $rr ( @$answers) {
+            next unless ( $rr->name eq $node->cname );
+            print_node( $rr, $answers, $host_length, $depth + 1 );
+        }
+    } else {
+        printf( "%*s%s[A] %s (%s)\n", $indent + ($depth * 3), '', $decorator,
+            $node->address, get_orgname($node->address) );
+    }
+}
+
