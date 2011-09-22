@@ -188,9 +188,10 @@ sub display_dns
     print "\n\n*** DNS information ***\n";
     print "Web:\n";
 
-    for ( my $i = 0; $i < $#domains + 1; $i++ ) {
-        printf( "%*s: ", $length + 2, $domains[$i] );
-        display_record( $domains[$i] );
+    #for ( my $i = 0; $i < $#domains + 1; $i++ ) {
+    foreach my $display_domain ( @domains ) {
+        printf( "%*s: ", $length + 2, $display_domain );
+        display_record( $display_domain );
     }
 }
 
