@@ -1,11 +1,14 @@
-domain_info.pl is a standalone perl script that shouldn't require
-any additional CPAN modules.
+domain_info.pl is a perl script that shows key WHOIS and DNS information
+about a given domain name.
+
+This utility requires Net::DNS, which you can easily install via:
+cpan Net::DNS
 
 It takes as input a domain name (i.e. example.com) and returns a nicely
 formatted report of public infromation about the domain: condensed/important
 WHOIS information, along with DNS information (specifically, the 'A' records 
-for the domain, the www subdomain, and whatever subdomain you optionally
-specify).
+or 'CNAME' records for the domain, the www subdomain, and whatever subdomain
+you optionally specify).
 
 Examples:
 domain_info.pl example.com
@@ -14,11 +17,11 @@ domain_info.pl store.example.com
 Both of these examples will show the condensed whois information for
 'example.com', along with the following DNS records:
 
-A record for example.com
-A record for www.example.com
+A or CNAME record for example.com
+A or CNAME record for www.example.com
 MX records for example.com
 
-The store.example.com version will also show the 'A' record for
+The store.example.com version will also show the 'A' or 'CNAME' record for
 'store.example.com'.
 
 It also performs a reverse-WHOIS on the returned IP addresses, which will
@@ -48,28 +51,20 @@ Status: clientRenewProhibited
 Status: clientTransferProhibited
 Status: clientUpdateProhibited
 Name servers:
-	NS1.ANCHOR.NET.AU
-	NS1.EVERYDNS.NET
-	NS2.ANCHOR.NET.AU
-	NS2.EVERYDNS.NET
-	NS3.EVERYDNS.NET
-	NS4.EVERYDNS.NET
+    NS1.P16.DYNECT.NET
+    NS2.P16.DYNECT.NET
+    NS3.P16.DYNECT.NET
+    NS4.P16.DYNECT.NET
 
 
 *** DNS information ***
 Web:
-      github.com: 207.97.227.239 (Rackspace Hosting)
-  www.github.com: 207.97.227.243 (Rackspace Hosting)
+      github.com: [A] 207.97.227.239 (Rackspace Hosting)
+  www.github.com: [A] 207.97.227.243 (Rackspace Hosting)
 
-Email:
-  MX: ASPMX2.GOOGLEMAIL.com = 74.125.43.27 (Google Inc.)
-  MX: ASPMX3.GOOGLEMAIL.com = 72.14.213.27 (Google Inc.)
-  MX: ALT1.ASPMX.L.GOOGLE.com = 74.125.47.27 (Google Inc.)
-  MX: ALT2.ASPMX.L.GOOGLE.com = 74.125.157.27 (Google Inc.)
-  MX: ASPMX.L.GOOGLE.com = 72.14.213.27 (Google Inc.)
-
-
-
-=== Notes ===
-The WHOIS scraping seems to work very well via Mac's terminal, but not on Linux.  I'll try to find a more standardized way to scrape WHOIS for this information.
-
+Email: 
+  10:   ALT2.ASPMX.L.GOOGLE.com: [A] 74.125.93.26 (Google Inc.)
+  10:        ASPMX.L.GOOGLE.com: [A] 74.125.127.26 (Google Inc.)
+  10:     ASPMX2.GOOGLEMAIL.com: [A] 74.125.43.27 (Google Inc.)
+  10:     ASPMX3.GOOGLEMAIL.com: [A] 74.125.127.27 (Google Inc.)
+  10:   ALT1.ASPMX.L.GOOGLE.com: [A] 74.125.159.27 (Google Inc.)
