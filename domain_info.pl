@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 
+use warnings;
 use strict;
 
-use Socket;
 use Net::DNS;
 use Getopt::Long;
 
@@ -17,14 +17,12 @@ my $whois_cache = {};
 # Default settings, toggled with command line flags
 my $options = {
     'no_cache' => 0,
-    'debug'    => 0,
 };
 
 exit main();
 
 sub main {
     GetOptions(
-        "d|debug"    => \$main::options->{'debug'},
         "n|no-cache" => \$main::options->{'no_cache'},
     );
 
@@ -33,7 +31,7 @@ sub main {
 
     if ( !$request ) {
         print "Usage: domain_info.pl <domain>\n"
-            . "optional flags: -n for no organization caching, -d for debug\n\n";
+            . "optional flag: -n for no organization caching\n\n";
         return (0);
     }
 
@@ -60,11 +58,13 @@ sub main {
     display_dns($request_info);
     display_mx($root_domain);
 
+    print "\n";
+
     if ( !$main::options{'no_cache'} ) {
         save_whois_cache();
     }
 
-    return (1)
+    return (1);
 }
 
 sub display_whois_data {
@@ -97,9 +97,6 @@ sub display_whois_data {
             if ( $whois_long =~ /Name servers:\s*(.*)\s+(?:WHOIS)/ ) {
                 $nameservers = $1;
             }
-
-            print "DBG: registrar = '$registrar'\n";
-            print "DBG: nameserver = '$nameservers'\n";
         }
     }
     else {
@@ -181,7 +178,7 @@ sub display_dns {
         $length = length( 'www.' . $domain );
     }
 
-    $length += 2;    # Pad length for breathing room
+    $length += 2;    # Indent output by 2 spaces
 
     my @domains = ( $domain, 'www.' . $domain );
     push( @domains, $custom_subdomain ) if ($custom_subdomain);
@@ -189,7 +186,6 @@ sub display_dns {
     print "\n\n*** DNS information ***\n";
     print "Web:\n";
 
-    #for ( my $i = 0; $i < $#domains + 1; $i++ ) {
     foreach my $display_domain (@domains) {
         printf( "%*s: ", $length, $display_domain );
         display_record( $display_domain, $length );
@@ -222,6 +218,9 @@ sub display_mx {
             display_record( $mx->exchange, $length + 6 );
         }
     }
+    else {
+        print "  No MX records found!\n";
+    }
 }
 
 sub get_orgname {
@@ -243,13 +242,13 @@ sub get_orgname {
         next if (/^[\s#]|^$|Internet Numbers/);
         $result = $_;
 
-        # Old way.  Seems to have changed for most TLD in 6/2011
+        # Some WHOIS servers use longform
         if (/OrgName:[^\S]*(.*)$/) {
             $org = $1;
             last;
         }
 
-        # New way:
+        # Shortform
         # So, we got a line that isn't a comment, blank, or has the generic
         #   'Internet Numbers' entry.  Grab the start of the line, prior to
         #   the last unbroken string of characters before a (
@@ -367,15 +366,21 @@ sub print_node {
     my $indent_mod = 0;
 
     if ($depth) {
+        #We're at least 1 level deep in CNAME resolution
+
+        # Make a pretty arrow
         $decorator = "`-> ";
 
         # Pad 2 for ': ', and 4 to center under [CNAME], and length of decorator
         $indent_mod = 2 + ( 3 * $depth ) + ( ( $depth > 1 ) ? length($decorator) : 0 );
     }
     elsif ($is_first) {
-        $indent_mod = 0 - $indent;    # make indent 0 for first result
+        # make indent_mod 0 for first result, because we have already
+        # output some information on this line (the domain for this DNS result)
+        $indent_mod = 0 - $indent;    
     }
     else {
+        # This indicates a secondary A or CNAME record defined for a given domain
         $indent_mod = 2;
     }
 
@@ -394,6 +399,5 @@ sub print_node {
             '', $decorator, $node->address, get_orgname( $node->address )
         );
     }
-
 }
 

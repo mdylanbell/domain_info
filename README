@@ -1,11 +1,14 @@
-domain_info.pl is a standalone perl script that shouldn't require
-any additional CPAN modules.
+domain_info.pl is a perl script that shows key WHOIS and DNS information
+about a given domain name.
+
+This utility requires Net::DNS, which you can easily install via:
+cpan Net::DNS
 
 It takes as input a domain name (i.e. example.com) and returns a nicely
 formatted report of public infromation about the domain: condensed/important
 WHOIS information, along with DNS information (specifically, the 'A' records 
-for the domain, the www subdomain, and whatever subdomain you optionally
-specify).
+or 'CNAME' records for the domain, the www subdomain, and whatever subdomain
+you optionally specify).
 
 Examples:
 domain_info.pl example.com
@@ -14,11 +17,11 @@ domain_info.pl store.example.com
 Both of these examples will show the condensed whois information for
 'example.com', along with the following DNS records:
 
-A record for example.com
-A record for www.example.com
+A or CNAME record for example.com
+A or CNAME record for www.example.com
 MX records for example.com
 
-The store.example.com version will also show the 'A' record for
+The store.example.com version will also show the 'A' or 'CNAME' record for
 'store.example.com'.
 
 It also performs a reverse-WHOIS on the returned IP addresses, which will
