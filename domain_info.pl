@@ -80,59 +80,39 @@ sub display_whois_data {
     my $whois_long;
     my $no_match = 0;
 
-    # Capture useful info from whois
-    if ( $domain =~ /\.co\.uk$/ ) {
-        $/ = '';
-        my $whois_long = `whois $domain`;
-        my $nameservers;
+    @whois = `whois $domain`;
 
-        if ( $whois_long =~ /^\s*This domain name has not been registered./m ) {
+    foreach my $line (@whois) {
+        if ( $line =~ /^\s*No match.*$domain/i || $line =~ /^NOT FOUND/ ) {
             $no_match = 1;
+            last;
         }
-        else {
-            if ( $whois_long =~ /Registrar:\s*(.*)$/m ) {
-                $registrar = $1;
-            }
 
-            if ( $whois_long =~ /Name servers:\s*(.*)\s+(?:WHOIS)/ ) {
-                $nameservers = $1;
-            }
+        if ( $line =~ /Registrar(?: Name)?:\s*(.*)$/i ) {
+            $registrar = $1;
         }
-    }
-    else {
-        @whois = `whois $domain`;
 
-        foreach my $line (@whois) {
-            if ( $line =~ /^\s*No match.*$domain/i ) {
-                print( $line . "\n" );
-                $no_match = 1;
-                last;
-            }
+        if ( $line =~ /Name\s*Servers?:\s*(.*)$/i ) {
+            push( @nameservers, $1 ) unless ( $1 =~ /^\s*$/ );
+        }
 
-            if ( $line =~ /Registrar(?: Name)?:\s*(.*)$/i ) {
-                $registrar = $1;
-            }
+        if ( $line =~ /Status:\s*(.*)$/i ) {
+            push( @status, $1 ) unless ( $1 =~ /^\s*$/ );
+        }
 
-            if ( $line =~ /Name\s*Servers?:\s*(.*)$/i ) {
-                push( @nameservers, $1 ) unless ( $1 =~ /^\s*$/ );
-            }
-
-            if ( $line =~ /Status:\s*(.*)$/i ) {
-                push( @status, $1 ) unless ( $1 =~ /^\s*$/ );
-            }
-
-            if ( $line =~ /Expiration Date:\s*(.*)$/i ) {
-                $expiration = $1;
-            }
+        if ( $line =~ /Expiration Date:\s*(.*)$/i ) {
+            $expiration = $1;
         }
     }
 
-    if ($no_match) {
+    if (!@whois) {
+        print "No WHOIS information returned.  Is the 'whois' command installed?\n\n";
+    }
+    elsif ($no_match) {
         print "\n$domain doesn't appear to be registered.\n\n";
         exit(1);
     }
-
-    if ( !$registrar && !$expiration ) {
+    elsif ( !$registrar && !$expiration ) {
         print "\n$domain: Couldn't parse WHOIS information, or domain may not be registered.\n";
         print "Displaying full WHOIS:\n\n";
         print @whois;
