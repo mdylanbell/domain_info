@@ -289,7 +289,7 @@ sub initialize_whois_cache {
 sub save_whois_cache {
     open( CACHE, ">", glob(WHOIS_CACHE_FILE) ) or die("Could not open whois cache: $!");
 
-    while ( my ( $ip, $ref ) = each(%$whois_cache) ) {
+    while ( my ( $ip, $ref ) = each(%$main::whois_cache) ) {
         my $org = $ref->{'org'};
         my $date;
 
