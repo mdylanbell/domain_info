@@ -31,9 +31,12 @@ sub main {
 
     if ( !$request ) {
         print "Usage: domain_info.pl <domain>\n"
-            . "optional flag: -n for no organization caching\n\n";
+            . "optional flag: -n (or --no-cache) for no organization caching\n\n";
         return (0);
     }
+
+    # Squash any protocol/path information, if present
+    $request =~ s/.*:\/\/([^\/]*).*/$1/;
 
     my $root_domain = get_root_domain($request);
 
